@@ -4,6 +4,45 @@ chromium.use(StealthPlugin());
 const https = require('https');
 const http = require('http');
 
+const TWOCAPTCHA_KEY = process.env.TWOCAPTCHA_KEY || '';
+
+// 2captcha se hCaptcha solve karo
+async function solveHCaptcha(sitekey, pageUrl) {
+  if (!TWOCAPTCHA_KEY) throw new Error('TWOCAPTCHA_KEY secret set nahi hai!');
+
+  console.log('[CAPTCHA] 2captcha ko hCaptcha bhej raha hun...');
+
+  // Task submit karo
+  const createRes = await httpRequest('POST', 'https://api.2captcha.com/createTask', {
+    clientKey: TWOCAPTCHA_KEY,
+    task: {
+      type: 'HCaptchaTaskProxyless',
+      websiteURL: pageUrl,
+      websiteKey: sitekey,
+    },
+  });
+  const createJson = JSON.parse(createRes.body);
+  if (createJson.errorId) throw new Error('2captcha task error: ' + createJson.errorDescription);
+  const taskId = createJson.taskId;
+  console.log('[CAPTCHA] Task ID:', taskId, '— result ka wait kar raha hun...');
+
+  // Result poll karo (max 120 sec)
+  for (let i = 0; i < 24; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    const resultRes = await httpRequest('POST', 'https://api.2captcha.com/getTaskResult', {
+      clientKey: TWOCAPTCHA_KEY,
+      taskId,
+    });
+    const resultJson = JSON.parse(resultRes.body);
+    if (resultJson.status === 'ready') {
+      console.log('[CAPTCHA] hCaptcha solve ho gaya!');
+      return resultJson.solution.gRecaptchaResponse;
+    }
+    console.log('[CAPTCHA] Abhi solve nahi hua... (' + ((i + 1) * 5) + 's)');
+  }
+  throw new Error('2captcha timeout — captcha 2 minute mein solve nahi hua');
+}
+
 // ============================================
 // Local ke liye: niche hardcode karo
 // GitHub Actions ke liye: Secrets mein add karo
@@ -140,12 +179,33 @@ async function run() {
 
   await tab2.waitForTimeout(1200);
 
+  // hCaptcha sitekey nikalo aur solve karo
+  const sitekey = await tab2.$eval(
+    'iframe[src*="hcaptcha"]',
+    el => new URL(el.src).searchParams.get('sitekey')
+  ).catch(() => null)
+  || await tab2.$eval('[data-sitekey]', el => el.dataset.sitekey).catch(() => null);
+
+  if (sitekey) {
+    console.log('[STEP 2] hCaptcha sitekey mila:', sitekey);
+    const captchaToken = await solveHCaptcha(sitekey, SITE2_URL);
+    // Token form mein inject karo
+    await tab2.$eval(
+      'textarea[name="h-captcha-response"]',
+      (el, token) => { el.value = token; },
+      captchaToken
+    );
+    console.log('[STEP 2] hCaptcha token inject kiya');
+  } else {
+    console.log('[STEP 2] hCaptcha nahi mila, direct submit kar raha hun');
+  }
+
   // Sign up button click karo
   await tab2.click('button[style*="view-transition-name: submit"]');
   console.log('[STEP 2] Sign up button click kiya');
 
-  // 8 sec wait — hCaptcha + redirect ke liye
-  await tab2.waitForTimeout(8000);
+  // 10 sec wait — submit + redirect ke liye
+  await tab2.waitForTimeout(10000);
 
   // Error check karo (invalid email / domain blocked)
   const errorText = await tab2.$eval(
