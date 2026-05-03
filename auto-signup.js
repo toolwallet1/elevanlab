@@ -132,6 +132,29 @@ async function run() {
   await tab2.click('button[style*="view-transition-name: submit"]');
   console.log('[STEP 2] Sign up button click kiya');
 
+  // Signup ke baad 4 sec wait karo — error ya redirect dekhne ke liye
+  await tab2.waitForTimeout(4000);
+
+  // Error check karo (invalid email / domain blocked)
+  const errorText = await tab2.$eval(
+    '[data-testid="sign-up-email-error"], [role="alert"], .error-message, [class*="error"]',
+    el => el.innerText.trim()
+  ).catch(() => null);
+
+  if (errorText) {
+    console.log('[STEP 2] ❌ Signup error mila:', errorText);
+    await browser.close();
+    throw new Error('ElevenLabs signup failed: ' + errorText);
+  }
+
+  // Current URL log karo — redirect hua ya nahi
+  const afterSignupUrl = tab2.url();
+  console.log('[STEP 2] Signup ke baad URL:', afterSignupUrl);
+
+  // Page title ya heading se confirm karo
+  const pageContent = await tab2.$eval('body', el => el.innerText.substring(0, 300)).catch(() => '');
+  console.log('[STEP 2] Page content (first 300 chars):\n', pageContent);
+
   // ─────────────────────────────────────────
   // STEP 3 — mail.tm API se verification email wait karo
   // ─────────────────────────────────────────
