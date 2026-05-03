@@ -1,7 +1,6 @@
 name: Auto Signup
 
 on:
-  # GitHub API se trigger karne ke liye
   workflow_dispatch:
     inputs:
       run_reason:
@@ -9,14 +8,13 @@ on:
         required: false
         default: 'manual'
 
-  # Agar schedule par bhi chahiye to uncomment karo
   # schedule:
-  #   - cron: '0 */6 * * *'  # har 6 ghante mein
+  #   - cron: '0 */6 * * *'
 
 jobs:
   run-signup:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -28,17 +26,22 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install Xvfb (virtual display)
+        run: sudo apt-get install -y xvfb
+
       - name: Install dependencies
         run: npm install
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Run auto-signup script
+      - name: Run auto-signup script (non-headless via Xvfb)
         env:
-          CI: 'true'
+          DISPLAY: ':99'
           API_URL: ${{ secrets.API_URL }}
           API_SECRET: ${{ secrets.API_SECRET }}
-          SITE1_URL: ${{ secrets.SITE1_URL }}
           SITE2_URL: ${{ secrets.SITE2_URL }}
-        run: node auto-signup.js
+        run: |
+          Xvfb :99 -screen 0 1280x800x24 &
+          sleep 2
+          node auto-signup.js

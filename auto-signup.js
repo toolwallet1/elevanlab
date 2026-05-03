@@ -111,10 +111,15 @@ async function run() {
   const { email: tempEmail, token: mailToken } = await createTempEmail();
   console.log('[STEP 1] Temp email mila:', tempEmail);
 
-  // CI (GitHub Actions) mein headless:true, local mein headless:false
-  const isCI = process.env.CI === 'true';
-  const browser = await chromium.launch({ headless: isCI });
-  const context = await browser.newContext();
+  // Hamesha non-headless — Xvfb virtual display CI mein handle karta hai
+  const browser = await chromium.launch({
+    headless: false,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
+  });
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  });
 
   // ─────────────────────────────────────────
   // STEP 2 — Tab 2: ElevenLabs Signup
