@@ -6,6 +6,8 @@
     "start": "node auto-signup.js"
   },
   "dependencies": {
-    "playwright": "^1.43.0"
+    "playwright": "^1.43.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }

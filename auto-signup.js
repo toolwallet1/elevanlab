@@ -1,4 +1,6 @@
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+chromium.use(StealthPlugin());
 const https = require('https');
 const http = require('http');
 
@@ -123,20 +125,27 @@ async function run() {
 
   await tab2.waitForSelector('[data-testid="sign-up-email-input"]', { timeout: 15000 });
 
-  await tab2.fill('[data-testid="sign-up-email-input"]', tempEmail);
+  // Human-like: type character by character
+  await tab2.click('[data-testid="sign-up-email-input"]');
+  await tab2.type('[data-testid="sign-up-email-input"]', tempEmail, { delay: 60 });
   console.log('[STEP 2] Email fill kiya:', tempEmail);
+
+  await tab2.waitForTimeout(800);
 
   // Password: 8+ chars, 1 number, 1 special char
   const password = 'Pass@' + Math.floor(Math.random() * 9000 + 1000);
-  await tab2.fill('[data-testid="sign-up-password-input"]', password);
+  await tab2.click('[data-testid="sign-up-password-input"]');
+  await tab2.type('[data-testid="sign-up-password-input"]', password, { delay: 60 });
   console.log('[STEP 2] Password fill kiya:', password);
+
+  await tab2.waitForTimeout(1200);
 
   // Sign up button click karo
   await tab2.click('button[style*="view-transition-name: submit"]');
   console.log('[STEP 2] Sign up button click kiya');
 
-  // 5 sec wait — page settle hone do
-  await tab2.waitForTimeout(5000);
+  // 8 sec wait — hCaptcha + redirect ke liye
+  await tab2.waitForTimeout(8000);
 
   // Error check karo (invalid email / domain blocked)
   const errorText = await tab2.$eval(
