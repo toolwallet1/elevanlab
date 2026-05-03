@@ -111,10 +111,9 @@ async function run() {
   const { email: tempEmail, token: mailToken } = await createTempEmail();
   console.log('[STEP 1] Temp email mila:', tempEmail);
 
-  // Hamesha non-headless — Xvfb virtual display CI mein handle karta hai
   const browser = await chromium.launch({
     headless: false,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },

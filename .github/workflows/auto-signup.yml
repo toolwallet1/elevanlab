@@ -13,21 +13,12 @@ on:
 
 jobs:
   run-signup:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Xvfb (virtual display)
-        run: sudo apt-get install -y xvfb
 
       - name: Install dependencies
         run: npm install
@@ -35,13 +26,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Run auto-signup script (non-headless via Xvfb)
+      - name: Run auto-signup script
         env:
-          DISPLAY: ':99'
           API_URL: ${{ secrets.API_URL }}
           API_SECRET: ${{ secrets.API_SECRET }}
           SITE2_URL: ${{ secrets.SITE2_URL }}
-        run: |
-          Xvfb :99 -screen 0 1280x800x24 &
-          sleep 2
-          node auto-signup.js
+        run: node auto-signup.js
