@@ -126,14 +126,51 @@ async function run() {
   await tab2.fill('[data-testid="sign-up-email-input"]', tempEmail);
   console.log('[STEP 2] Email fill kiya:', tempEmail);
 
-  await tab2.fill('[data-testid="sign-up-password-input"]', tempEmail);
-  console.log('[STEP 2] Password fill kiya (same as email)');
+  // Password: requirements — 8+ chars, 1 number, 1 special char
+  const password = 'Pass@' + Math.floor(Math.random() * 9000 + 1000);
+  await tab2.fill('[data-testid="sign-up-password-input"]', password);
+  console.log('[STEP 2] Password fill kiya:', password);
 
-  await tab2.click('button[style*="view-transition-name: submit"]');
-  console.log('[STEP 2] Sign up button click kiya');
+  // Terms of Service checkbox check karo (required hai)
+  const tosCheckbox = await tab2.$('input[type="checkbox"]');
+  if (tosCheckbox) {
+    const isChecked = await tosCheckbox.isChecked();
+    if (!isChecked) {
+      await tosCheckbox.click();
+      console.log('[STEP 2] ToS checkbox check kiya');
+    }
+  } else {
+    console.log('[STEP 2] ToS checkbox nahi mila, skip kar raha hun');
+  }
 
-  // Signup ke baad 4 sec wait karo — error ya redirect dekhne ke liye
-  await tab2.waitForTimeout(4000);
+  await tab2.waitForTimeout(500);
+
+  // Submit button click karo — multiple selectors try karo
+  const submitSelectors = [
+    '[data-testid="sign-up-submit-button"]',
+    'button[type="submit"]',
+    'button[style*="view-transition-name: submit"]',
+    'form button:last-of-type',
+  ];
+
+  let clicked = false;
+  for (const sel of submitSelectors) {
+    const btn = await tab2.$(sel);
+    if (btn) {
+      const isDisabled = await btn.isDisabled();
+      console.log('[STEP 2] Button found:', sel, '| disabled:', isDisabled);
+      if (!isDisabled) {
+        await btn.click();
+        clicked = true;
+        console.log('[STEP 2] Sign up button click kiya:', sel);
+        break;
+      }
+    }
+  }
+  if (!clicked) throw new Error('Sign up button nahi mila ya disabled hai');
+
+  // Signup ke baad 5 sec wait karo — error ya redirect dekhne ke liye
+  await tab2.waitForTimeout(5000);
 
   // Error check karo (invalid email / domain blocked)
   const errorText = await tab2.$eval(
@@ -202,7 +239,7 @@ async function run() {
     await verifyTab.fill('[data-testid="sign-in-email-input"]', tempEmail);
     console.log('[STEP 5] Sign-in email fill kiya');
 
-    await verifyTab.fill('[data-testid="sign-in-password-input"]', tempEmail);
+    await verifyTab.fill('[data-testid="sign-in-password-input"]', password);
     console.log('[STEP 5] Sign-in password fill kiya');
 
     await verifyTab.click('[data-testid="sign-in-submit-button"]');
