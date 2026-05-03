@@ -1,0 +1,11 @@
+{
+  "name": "elevan-lab-automation",
+  "version": "1.0.0",
+  "description": "Browser automation - temp email signup + session sync",
+  "scripts": {
+    "start": "node auto-signup.js"
+  },
+  "dependencies": {
+    "playwright": "^1.43.0"
+  }
+}

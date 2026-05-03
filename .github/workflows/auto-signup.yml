@@ -1,0 +1,44 @@
+name: Auto Signup
+
+on:
+  # GitHub API se trigger karne ke liye
+  workflow_dispatch:
+    inputs:
+      run_reason:
+        description: 'Run reason (optional)'
+        required: false
+        default: 'manual'
+
+  # Agar schedule par bhi chahiye to uncomment karo
+  # schedule:
+  #   - cron: '0 */6 * * *'  # har 6 ghante mein
+
+jobs:
+  run-signup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run auto-signup script
+        env:
+          CI: 'true'
+          API_URL: ${{ secrets.API_URL }}
+          API_SECRET: ${{ secrets.API_SECRET }}
+          SITE1_URL: ${{ secrets.SITE1_URL }}
+          SITE2_URL: ${{ secrets.SITE2_URL }}
+        run: node auto-signup.js
