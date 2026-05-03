@@ -111,14 +111,32 @@ async function run() {
   const { email: tempEmail, token: mailToken } = await createTempEmail();
   console.log('[STEP 1] Temp email mila:', tempEmail);
 
-  const browser = await chromium.launch({
-    headless: false,
+  const PROXY_SERVER   = process.env.PROXY_SERVER   || '';  // e.g. http://proxy.webshare.io:80
+  const PROXY_USERNAME = process.env.PROXY_USERNAME || '';
+  const PROXY_PASSWORD = process.env.PROXY_PASSWORD || '';
+
+  const launchOptions = {
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
-  const context = await browser.newContext({
+  };
+  if (PROXY_SERVER) launchOptions.proxy = { server: PROXY_SERVER };
+
+  const browser = await chromium.launch(launchOptions);
+
+  const contextOptions = {
     viewport: { width: 1280, height: 800 },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  });
+  };
+  if (PROXY_SERVER && PROXY_USERNAME) {
+    contextOptions.httpCredentials = { username: PROXY_USERNAME, password: PROXY_PASSWORD };
+  }
+
+  const context = await browser.newContext(contextOptions);
+  if (PROXY_SERVER) {
+    console.log('[INFO] Residential proxy use ho raha hai:', PROXY_SERVER);
+  } else {
+    console.log('[INFO] Proxy set nahi — direct connection');
+  }
 
   // ─────────────────────────────────────────
   // STEP 2 — Tab 2: ElevenLabs Signup
