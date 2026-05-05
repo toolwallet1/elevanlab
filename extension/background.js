@@ -262,6 +262,9 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     } catch (e) {
       console.error('[BG] Complete error:', e.message);
     }
+
+    // Alarm ka wait nahi — turant next task check karo
+    await checkForNextTask();
   }
 
   if (msg.type === 'SIGNUP_ERROR') {
@@ -269,6 +272,29 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     await resetTask();
   }
 });
+
+// ─── Immediate Next Task ─────────────────
+async function checkForNextTask() {
+  await loadConfig();
+  if (currentTask) return; // already assigned
+  if (!SERVER_URL) return;
+  console.log('[BG] Next task check kar raha hun (turant)...');
+  try {
+    const res  = await fetch(`${SERVER_URL}/task/next`);
+    const data = await res.json();
+    if (data.task) {
+      currentTask = { ...data.task, status: 'assigned', assignedAt: Date.now() };
+      await saveState();
+      console.log('[BG] Next task mila:', currentTask.id, currentTask.email);
+      await clearElevenLabsData();
+      await openSignupPage();
+    } else {
+      console.log('[BG] Abhi koi task nahi, alarm wait karega');
+    }
+  } catch (e) {
+    console.error('[BG] Next task check error:', e.message);
+  }
+}
 
 async function resetTask() {
   if (signupWinId) { try { await chrome.windows.remove(signupWinId); } catch (e) {} }

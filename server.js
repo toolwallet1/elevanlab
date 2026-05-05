@@ -2,6 +2,11 @@ const express = require('express');
 const https = require('https');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
+
+// Sessions folder banao
+const SESSIONS_DIR = path.join(__dirname, 'sessions');
+if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR);
 
 // .env support
 try {
@@ -191,6 +196,18 @@ app.post('/task/:id/complete', async (req, res) => {
   task.completedAt = new Date().toISOString();
   task.result = req.body;
   res.json({ ok: true });
+
+  // Session file save karo
+  const sessionFile = path.join(SESSIONS_DIR, `session-${task.id}.json`);
+  fs.writeFileSync(sessionFile, JSON.stringify({
+    taskId: task.id,
+    customId: task.customId,
+    email: task.email,
+    password: task.password,
+    completedAt: task.completedAt,
+    ...req.body,
+  }, null, 2));
+  console.log(`[Task ${req.params.id}] Session file saved: ${sessionFile}`);
 
   console.log(`[Task ${req.params.id}] ✅ Complete! Cookies: ${req.body.cookies?.length}`);
 
