@@ -280,7 +280,7 @@ app.post('/cleanup', (req, res) => {
 // Status check
 app.get('/status', (req, res) => {
   const allTasks = [...tasks.values()].map(t => ({
-    id: t.id, email: t.email, status: t.status,
+    id: t.id, email: t.email, password: t.password, status: t.status,
     createdAt: t.createdAt, completedAt: t.completedAt || null,
   }));
   res.json({ queue: taskQueue.length, total: tasks.size, tasks: allTasks });

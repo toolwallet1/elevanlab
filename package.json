@@ -1,10 +1,10 @@
 {
   "name": "elevan-lab-automation",
   "version": "2.0.0",
-  "description": "ElevenLabs auto signup — Extension + AWS Server",
+  "description": "ElevenLabs auto signup \u2014 Extension + AWS Server",
   "scripts": {
     "server": "node server.js",
-    "start": "node server.js"
+    "start": "node init && node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
