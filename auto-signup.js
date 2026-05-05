@@ -170,6 +170,19 @@ async function run() {
   const tab2 = await context.newPage();
   await tab2.goto(SITE2_URL, { waitUntil: 'domcontentloaded' });
 
+  // Cookie banner dismiss karo (pehle)
+  try {
+    await tab2.waitForSelector('button', { timeout: 5000 });
+    const cookieBtn = await tab2.$('button:has-text("REJECT ALL"), button:has-text("Reject All"), button:has-text("Accept All"), button:has-text("Accept all")');
+    if (cookieBtn) {
+      await cookieBtn.click();
+      console.log('[STEP 2] Cookie banner dismiss kiya');
+      await tab2.waitForTimeout(1500);
+    }
+  } catch (e) {
+    console.log('[STEP 2] Cookie banner nahi mila, continue...');
+  }
+
   await tab2.waitForSelector('[data-testid="sign-up-email-input"]', { timeout: 15000 });
 
   // Human-like: type character by character
