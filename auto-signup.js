@@ -3,6 +3,19 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 chromium.use(StealthPlugin());
 const https = require('https');
 const http = require('http');
+const path = require('path');
+
+// .env file support
+try {
+  const fs = require('fs');
+  const envFile = path.join(__dirname, '.env');
+  if (fs.existsSync(envFile)) {
+    fs.readFileSync(envFile, 'utf8').split('\n').forEach(line => {
+      const [key, ...val] = line.trim().split('=');
+      if (key && val.length) process.env[key] = val.join('=');
+    });
+  }
+} catch (e) {}
 
 // ============================================
 // Local ke liye: niche hardcode karo
