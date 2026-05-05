@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "ElevenLabs Auto Signup",
+  "version": "1.0",
+  "description": "AWS server se task lo, ElevenLabs account banao, cookies wapas bhejo",
+  "permissions": [
+    "tabs",
+    "cookies",
+    "storage",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://elevenlabs.io/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://elevenlabs.io/app/sign-up*"],
+      "js": ["content-signup.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://elevenlabs.io/app/sign-in*",
+        "https://elevenlabs.io/app/onboarding*",
+        "https://elevenlabs.io/app/*"
+      ],
+      "js": ["content-session.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ElevenLabs Auto Signup"
+  }
+}

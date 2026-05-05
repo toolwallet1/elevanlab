@@ -1,12 +1,13 @@
 {
   "name": "elevan-lab-automation",
-  "version": "1.0.0",
-  "description": "Browser automation - temp email signup + session sync",
+  "version": "2.0.0",
+  "description": "ElevenLabs auto signup — Extension + AWS Server",
   "scripts": {
-    "start": "node auto-signup.js"
+    "server": "node server.js",
+    "start": "node server.js"
   },
   "dependencies": {
-    "playwright": "^1.43.0",
+    "express": "^4.18.2",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
