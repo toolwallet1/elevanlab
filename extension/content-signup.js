@@ -21,20 +21,23 @@ async function wait(ms) {
 }
 
 async function doSignup(email, password) {
-  // Cookie banner dismiss karo
-  await wait(2000);
-  try {
-    const btns = [...document.querySelectorAll('button')];
-    const cookieBtn = btns.find(b =>
-      b.innerText.includes('REJECT') || b.innerText.includes('Reject') ||
-      b.innerText.includes('Accept All') || b.innerText.includes('ACCEPT')
-    );
-    if (cookieBtn) {
-      cookieBtn.click();
-      console.log('[CONTENT-SIGNUP] Cookie banner dismiss kiya');
-      await wait(1500);
-    }
-  } catch (e) {}
+  // Cookie banner dismiss karo — 5 baar retry
+  for (let i = 0; i < 5; i++) {
+    await wait(1000);
+    try {
+      const btns = [...document.querySelectorAll('button')];
+      const cookieBtn = btns.find(b => {
+        const t = b.innerText.trim().toUpperCase();
+        return t.includes('REJECT') || t.includes('ACCEPT');
+      });
+      if (cookieBtn) {
+        cookieBtn.click();
+        console.log('[CONTENT-SIGNUP] Cookie banner dismiss kiya');
+        await wait(1000);
+        break;
+      }
+    } catch (e) {}
+  }
 
   // Email field
   const emailInput = document.querySelector('[data-testid="sign-up-email-input"]');

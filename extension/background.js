@@ -93,7 +93,18 @@ async function openSignupPage() {
   }
 
   signupWinId = win.id;
-  signupTabId = win.tabs[0].id;
+  // tabs array kabhi kabhi empty hoti hai — fallback se lo
+  if (win.tabs && win.tabs[0]) {
+    signupTabId = win.tabs[0].id;
+  } else {
+    const tabs = await chrome.tabs.query({ windowId: win.id });
+    signupTabId = tabs[0]?.id || null;
+  }
+  if (!signupTabId) {
+    console.error('[BG] Signup tab ID nahi mila');
+    await resetTask();
+    return;
+  }
   await saveState();
 
   // Tab load hone ka wait phir message bhejo
@@ -158,7 +169,12 @@ async function openVerifyLink(verifyLink) {
   }
 
   verifyWinId = win.id;
-  verifyTabId = win.tabs[0].id;
+  if (win.tabs && win.tabs[0]) {
+    verifyTabId = win.tabs[0].id;
+  } else {
+    const tabs = await chrome.tabs.query({ windowId: win.id });
+    verifyTabId = tabs[0]?.id || null;
+  }
   await saveState();
   console.log('[BG] Verify tab opened:', verifyTabId);
 
