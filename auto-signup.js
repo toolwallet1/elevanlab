@@ -128,9 +128,21 @@ async function run() {
   const PROXY_USERNAME = process.env.PROXY_USERNAME || '';
   const PROXY_PASSWORD = process.env.PROXY_PASSWORD || '';
 
+  // System Chromium path (Ubuntu 26.04 par Playwright ka browser kaam nahi karta)
+  const possibleChromePaths = [
+    '/snap/bin/chromium',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+  ];
+  const fs = require('fs');
+  const executablePath = possibleChromePaths.find(p => fs.existsSync(p)) || undefined;
+  if (executablePath) console.log('[INFO] System Chromium use ho raha hai:', executablePath);
+
   const launchOptions = {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   };
   if (PROXY_SERVER) launchOptions.proxy = { server: PROXY_SERVER };
 
