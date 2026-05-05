@@ -1,6 +1,26 @@
 // ElevenLabs session extract + sign-in content script
 console.log('[CONTENT-SESSION] Loaded on:', window.location.href);
 
+// Page load par "Email Verification" popup auto-handle karo
+(async () => {
+  await new Promise(r => setTimeout(r, 1500));
+  await handleEmailVerificationPopup();
+})();
+
+async function handleEmailVerificationPopup() {
+  // "Continue" button dhundho popup mein
+  const btns = [...document.querySelectorAll('button')];
+  const continueBtn = btns.find(b =>
+    b.innerText.trim() === 'Continue' ||
+    b.innerText.toLowerCase().includes('continue')
+  );
+  if (continueBtn) {
+    console.log('[CONTENT-SESSION] Email Verification popup mila — Continue click kar raha hun');
+    continueBtn.click();
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.type === 'DO_SIGNIN') {
     await doSignin(msg.email, msg.password);

@@ -131,7 +131,7 @@ async function pollVerificationEmail(task) {
 }
 
 // ─── Task create ──────────────────────────
-async function createTask() {
+async function createTask(customId = null) {
   console.log('\n[SERVER] Naya task bana raha hun...');
   const { email, token } = await createTempEmail();
   const password = 'Pass@' + Math.floor(Math.random() * 9000 + 1000);
@@ -139,6 +139,7 @@ async function createTask() {
 
   tasks.set(taskId, {
     id: taskId,
+    customId,           // BE ka ID — wapas bheja jayega
     email,
     password,
     mailToken: token,
@@ -196,6 +197,7 @@ app.post('/task/:id/complete', async (req, res) => {
   if (API_URL) {
     try {
       const result = await httpRequest('POST', API_URL, {
+        customId: task.customId,   // BE ka ID wapas
         email: task.email,
         ...req.body,
         timestamp: new Date().toISOString(),
@@ -207,12 +209,13 @@ app.post('/task/:id/complete', async (req, res) => {
   }
 });
 
-// Manual trigger — server se new signup shuru karo
+// Manual trigger — BE se customId pass karo
 app.post('/trigger', async (req, res) => {
   const secret = req.headers['x-secret'] || req.query.secret;
   if (secret !== SERVER_SECRET) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const taskId = await createTask();
+    const customId = req.body?.customId || null; // BE ka apna ID
+    const taskId = await createTask(customId);
     res.json({ ok: true, taskId });
   } catch (e) {
     res.status(500).json({ error: e.message });
