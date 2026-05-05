@@ -1,34 +1,27 @@
-// ElevenLabs session extract + sign-in content script
-console.log('[CONTENT-SESSION] Loaded on:', window.location.href);
+console.log('[CONTENT-SESSION] Loaded:', window.location.href);
 
-// Page load par "Email Verification" popup auto-handle karo
+// ─── Auto detect page type ────────────────
 (async () => {
-  await new Promise(r => setTimeout(r, 1500));
-  await handleEmailVerificationPopup();
+  const url = window.location.href;
+
+  // Onboarding page — seedha session extract karo (no message needed)
+  if (url.includes('onboarding') || url.includes('/app/') && !url.includes('sign')) {
+    await sleep(3000);
+    console.log('[CONTENT-SESSION] Onboarding/App page — auto session extract');
+    extractAndSend();
+    return;
+  }
+
+  // Sign-in page — popup handle karo phir wait for message
+  if (url.includes('sign-in') || url.includes('sign-up')) {
+    await handlePopups();
+  }
 })();
 
-async function handleEmailVerificationPopup() {
-  // Cookiebot banner dismiss
-  const cookiebotBtn = document.getElementById('CybotCookiebotDialogBodyButtonAccept');
-  if (cookiebotBtn) {
-    cookiebotBtn.click();
-    await new Promise(r => setTimeout(r, 1000));
-  }
-  // "Continue" button dhundho Email Verification popup mein
-  const btns = [...document.querySelectorAll('button')];
-  const continueBtn = btns.find(b =>
-    b.innerText.trim() === 'Continue' ||
-    b.innerText.toLowerCase().includes('continue')
-  );
-  if (continueBtn) {
-    console.log('[CONTENT-SESSION] Email Verification popup — Continue click kiya');
-    continueBtn.click();
-    await new Promise(r => setTimeout(r, 1500));
-  }
-}
-
+// ─── Message listener ─────────────────────
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.type === 'DO_SIGNIN') {
+    await handlePopups(); // pehle popups clear karo
     await doSignin(msg.email, msg.password);
   }
   if (msg.type === 'EXTRACT_SESSION') {
@@ -36,13 +29,40 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   }
 });
 
-async function wait(ms) {
-  return new Promise(r => setTimeout(r, ms));
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Popup handler — poll karo 15 sec tak ─
+async function handlePopups() {
+  for (let i = 0; i < 30; i++) {
+    await sleep(500);
+
+    // Cookiebot banner
+    const cookieBtn = document.getElementById('CybotCookiebotDialogBodyButtonAccept');
+    if (cookieBtn && cookieBtn.offsetParent !== null) {
+      cookieBtn.click();
+      console.log('[CONTENT-SESSION] Cookie banner dismiss kiya');
+      await sleep(800);
+      continue;
+    }
+
+    // Email Verification "Continue" popup
+    const btns = [...document.querySelectorAll('button')];
+    const continueBtn = btns.find(b =>
+      b.offsetParent !== null && b.innerText.trim() === 'Continue'
+    );
+    if (continueBtn) {
+      console.log('[CONTENT-SESSION] Email Verification Continue click kiya');
+      continueBtn.click();
+      await sleep(1500);
+      return; // popup handled
+    }
+  }
 }
 
+// ─── Sign In ──────────────────────────────
 async function doSignin(email, password) {
   console.log('[CONTENT-SESSION] Sign-in kar raha hun...');
-  await wait(1500);
+  await sleep(1000);
 
   const emailInput = document.querySelector('[data-testid="sign-in-email-input"]');
   const pwdInput   = document.querySelector('[data-testid="sign-in-password-input"]');
@@ -52,55 +72,48 @@ async function doSignin(email, password) {
     return;
   }
 
-  // Email fill
   emailInput.focus();
   emailInput.value = '';
   for (const char of email) {
     emailInput.value += char;
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(50);
+    await sleep(40);
   }
+  await sleep(400);
 
-  await wait(500);
-
-  // Password fill
   pwdInput.focus();
   pwdInput.value = '';
   for (const char of password) {
     pwdInput.value += char;
     pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(50);
+    await sleep(40);
   }
-
-  await wait(800);
+  await sleep(600);
 
   const submitBtn = document.querySelector('[data-testid="sign-in-submit-button"]')
-    || [...document.querySelectorAll('button')].find(b => b.innerText.includes('Sign in') || b.innerText.includes('Continue'));
+    || [...document.querySelectorAll('button')].find(b =>
+        b.innerText.includes('Sign in') || b.innerText.includes('Continue'));
 
   if (submitBtn) {
     submitBtn.click();
-    console.log('[CONTENT-SESSION] Sign-in submit click kiya');
+    console.log('[CONTENT-SESSION] Sign-in submit kiya');
   }
 }
 
+// ─── Session Extract ──────────────────────
 function extractAndSend() {
-  console.log('[CONTENT-SESSION] Session extract kar raha hun...');
-
-  const local = {};
-  const session = {};
+  const local = {}, session = {};
 
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     local[k] = localStorage.getItem(k);
   }
-
   for (let i = 0; i < sessionStorage.length; i++) {
     const k = sessionStorage.key(i);
     session[k] = sessionStorage.getItem(k);
   }
 
-  console.log('[CONTENT-SESSION] localStorage keys:', Object.keys(local).length);
-  console.log('[CONTENT-SESSION] sessionStorage keys:', Object.keys(session).length);
+  console.log('[CONTENT-SESSION] Session extract kiya — localStorage:', Object.keys(local).length, '| sessionStorage:', Object.keys(session).length);
 
   chrome.runtime.sendMessage({
     type: 'SESSION_DATA',

