@@ -8,14 +8,20 @@ console.log('[CONTENT-SESSION] Loaded on:', window.location.href);
 })();
 
 async function handleEmailVerificationPopup() {
-  // "Continue" button dhundho popup mein
+  // Cookiebot banner dismiss
+  const cookiebotBtn = document.getElementById('CybotCookiebotDialogBodyButtonAccept');
+  if (cookiebotBtn) {
+    cookiebotBtn.click();
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  // "Continue" button dhundho Email Verification popup mein
   const btns = [...document.querySelectorAll('button')];
   const continueBtn = btns.find(b =>
     b.innerText.trim() === 'Continue' ||
     b.innerText.toLowerCase().includes('continue')
   );
   if (continueBtn) {
-    console.log('[CONTENT-SESSION] Email Verification popup mila — Continue click kar raha hun');
+    console.log('[CONTENT-SESSION] Email Verification popup — Continue click kiya');
     continueBtn.click();
     await new Promise(r => setTimeout(r, 1500));
   }

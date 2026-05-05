@@ -21,19 +21,28 @@ async function wait(ms) {
 }
 
 async function doSignup(email, password) {
-  // Cookie banner dismiss karo — 5 baar retry
-  for (let i = 0; i < 5; i++) {
+  // Cookie banner dismiss karo — multiple selectors, 6 baar retry
+  for (let i = 0; i < 6; i++) {
     await wait(1000);
     try {
+      // Cookiebot specific button
+      const cookiebotBtn = document.getElementById('CybotCookiebotDialogBodyButtonAccept');
+      if (cookiebotBtn) {
+        cookiebotBtn.click();
+        console.log('[CONTENT-SIGNUP] Cookiebot banner dismiss kiya');
+        await wait(1200);
+        break;
+      }
+      // Generic fallback
       const btns = [...document.querySelectorAll('button')];
       const cookieBtn = btns.find(b => {
         const t = b.innerText.trim().toUpperCase();
-        return t.includes('REJECT') || t.includes('ACCEPT');
+        return t.includes('REJECT ALL') || t.includes('ACCEPT ALL') || t.includes('ACCEPT COOKIES');
       });
       if (cookieBtn) {
         cookieBtn.click();
-        console.log('[CONTENT-SIGNUP] Cookie banner dismiss kiya');
-        await wait(1000);
+        console.log('[CONTENT-SIGNUP] Cookie banner dismiss kiya (generic)');
+        await wait(1200);
         break;
       }
     } catch (e) {}

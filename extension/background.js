@@ -22,12 +22,14 @@ async function saveState() {
 
 // ─── Startup ──────────────────────────────
 chrome.runtime.onInstalled.addListener(async () => {
-  await chrome.alarms.create('poll', { periodInMinutes: 0.2 });
+  await chrome.alarms.clear('poll');
+  await chrome.alarms.create('poll', { periodInMinutes: 0.5 }); // min 30 sec
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await loadConfig();
-  await chrome.alarms.create('poll', { periodInMinutes: 0.2 });
+  await chrome.alarms.clear('poll');
+  await chrome.alarms.create('poll', { periodInMinutes: 0.5 });
 });
 
 // ─── Poll Loop ────────────────────────────
@@ -35,13 +37,22 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== 'poll') return;
   await loadConfig();
   if (!SERVER_URL) return;
-  if (currentTask) return; // Task chal raha hai
+  // Stuck task check — 5 min se zyada assigned mein hai toh reset
+  if (currentTask) {
+    const age = Date.now() - (currentTask.assignedAt || 0);
+    if (age > 5 * 60 * 1000) {
+      console.warn('[BG] Task stuck tha, reset kar raha hun:', currentTask.id);
+      await resetTask();
+    } else {
+      return;
+    }
+  }
 
   try {
     const res = await fetch(`${SERVER_URL}/task/next`);
     const data = await res.json();
     if (data.task) {
-      currentTask = { ...data.task, status: 'assigned' };
+      currentTask = { ...data.task, status: 'assigned', assignedAt: Date.now() };
       await saveState();
       console.log('[BG] Task mila:', currentTask.id, currentTask.email);
       await clearElevenLabsData();

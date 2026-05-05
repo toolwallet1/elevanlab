@@ -243,6 +243,23 @@ app.get('/task/:id/result', (req, res) => {
   res.json({ ready: false, status: task.status });
 });
 
+// Stuck tasks cleanup — assigned mein 10 min se zyada = pending mein wapas
+app.post('/cleanup', (req, res) => {
+  const secret = req.headers['x-secret'] || req.query.secret;
+  if (secret !== SERVER_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+  let count = 0;
+  const now = Date.now();
+  for (const [id, task] of tasks) {
+    if (task.status === 'assigned' && (now - new Date(task.createdAt).getTime()) > 10 * 60 * 1000) {
+      task.status = 'pending';
+      taskQueue.unshift(id); // queue ke aage daalo
+      count++;
+    }
+  }
+  console.log(`[SERVER] Cleanup: ${count} stuck tasks reset`);
+  res.json({ ok: true, reset: count });
+});
+
 // Status check
 app.get('/status', (req, res) => {
   const allTasks = [...tasks.values()].map(t => ({
