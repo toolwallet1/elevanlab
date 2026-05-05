@@ -81,13 +81,19 @@ async function createTempEmail() {
 // ─────────────────────────────────────────
 // Firebase REST API se ElevenLabs account banao (no browser, no captcha)
 // ─────────────────────────────────────────
+const FIREBASE_HEADERS = {
+  'Referer': 'https://elevenlabs.io/',
+  'Origin': 'https://elevenlabs.io',
+  'X-Client-Version': 'Chrome/JsCore/10.11.0/FirebaseCore-web',
+};
+
 async function firebaseSignup(email, password) {
   const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_KEY}`;
   const res = await httpRequest('POST', url, {
     email,
     password,
     returnSecureToken: true,
-  });
+  }, FIREBASE_HEADERS);
   const json = JSON.parse(res.body);
   if (json.error) throw new Error('Firebase signup error: ' + json.error.message);
   console.log('[STEP 2] Firebase signup success! UID:', json.localId);
@@ -97,7 +103,7 @@ async function firebaseSignup(email, password) {
   const verifyRes = await httpRequest('POST', verifyUrl, {
     requestType: 'VERIFY_EMAIL',
     idToken: json.idToken,
-  });
+  }, FIREBASE_HEADERS);
   const verifyJson = JSON.parse(verifyRes.body);
   if (verifyJson.error) throw new Error('Verification email error: ' + verifyJson.error.message);
   console.log('[STEP 2] Verification email bhej diya:', verifyJson.email);
