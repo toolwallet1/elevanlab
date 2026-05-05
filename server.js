@@ -188,6 +188,7 @@ app.post('/task/:id/complete', async (req, res) => {
   if (!task) return res.status(404).json({ error: 'Task not found' });
   task.status = 'complete';
   task.completedAt = new Date().toISOString();
+  task.result = req.body;
   res.json({ ok: true });
 
   console.log(`[Task ${req.params.id}] ✅ Complete! Cookies: ${req.body.cookies?.length}`);
@@ -216,6 +217,27 @@ app.post('/trigger', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// BE polls this — task ka result lo
+app.get('/task/:id/result', (req, res) => {
+  const task = tasks.get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+
+  if (task.status === 'complete') {
+    return res.json({
+      ready: true,
+      email: task.email,
+      password: task.password,
+      data: task.result,
+    });
+  }
+
+  if (task.status === 'failed') {
+    return res.json({ ready: false, error: task.error });
+  }
+
+  res.json({ ready: false, status: task.status });
 });
 
 // Status check
